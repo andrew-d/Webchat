@@ -4,16 +4,49 @@
 		<title>Pretty Awesome Chat</title>
 
 		<script src="socket.io.js"></script>
+		<script src="jquery-1.7.2.min.js"></script>
 		<script>
-			var socket = io.connect('http://localhost');
-			socket.on('message', function (data) {
-				console.log(data);
-				
+			var socket = io.connect('http://localhost:8000');
+			socket.on('chat_message', function (data) {
+				console.log("Chat message: " + data);
+
+				var existing = $("#chatarea").val();
+				$("#chatarea").val(existing + "\n" + data.user + ": " + data.text);
+			});
+
+			$(document).ready( function() {
+				$("#messagefrm").submit(function() {
+					//alert($("#message").val());
+					tosend = {
+						message: $("#message").val(),
+						user: $("#username").val()
+					};
+					socket.emit('message', tosend);
+					return false;
+				});
+
+				$("#userinfo").submit(function() { return false; });
 			});
 		</script>
+
+		<style>
+			textarea#chatarea {
+				height: 300px;
+				width: 500px;
+			};
+		</style>
 	</head>
 	<body>
+		<form id="userinfo" action="#">
+			<label for="username">Username:</label>
+			<input type="text" id="username">
+		</form>
 
+		<textarea id="chatarea" style="height:100, width:100">Welcome to the chat!</textarea>
 
+		<form id="messagefrm" action="#">
+			<input type="text" id="message"/>
+			<input type="submit" text="Send"/>
+		</form>
 	</body>
 </html>
