@@ -6,26 +6,53 @@
 		<script src="socket.io.js"></script>
 		<script src="jquery-1.7.2.min.js"></script>
 		<script>
-			var socket = io.connect('http://localhost:8000');
-			socket.on('chat_message', function (data) {
-				console.log("Chat message: " + data);
+			var ADDRESS = 'http://localhost:8000';
+			var socket = null;
+			var username = null;
 
+			function addLine(data) {
 				var existing = $("#chatarea").val();
-				$("#chatarea").val(existing + "\n" + data.user + ": " + data.text);
-			});
+				$("#chatarea").val(existing + "\n" + data);
+			}
 
 			$(document).ready( function() {
 				$("#messagefrm").submit(function() {
-					//alert($("#message").val());
-					tosend = {
-						message: $("#message").val(),
-						user: $("#username").val()
-					};
-					socket.emit('message', tosend);
+					var to_user = $("#to_user").val();
+
+					if( to_user === "" )
+					{
+						socket.emit('message', {
+							message: $("#message").val()
+						});
+					} else
+					{
+						var msg = $("#message").val();
+						socket.emit('privmsg', {
+							to_user: to_user,
+							message: msg
+						});
+
+						addLine("privmsg: " + username + ": " + msg);
+					}
 					return false;
 				});
 
-				$("#userinfo").submit(function() { return false; });
+				$("#userinfo").submit(function() { 
+					socket = io.connect(ADDRESS);
+					username = $("#username").val();
+
+					socket.emit("connected", {
+						username: username,
+						password: $("#password").val()
+					});
+
+					socket.on('chat_message', function (data) {
+						console.log("Chat message: " + data);
+						addLine(data.from_user + ": " + data.text);
+					});
+
+					return false; 
+				});
 			});
 		</script>
 
@@ -38,14 +65,17 @@
 	</head>
 	<body>
 		<form id="userinfo" action="#">
-			<label for="username">Username:</label>
-			<input type="text" id="username">
+			<label for="username">Username:</label><input type="text" id="username">
+			<label for="password">Password (leave blank if not admin):</label><input type="password" id="password">
+
+			<input type="submit" text="Join Chat"/>
 		</form>
 
 		<textarea id="chatarea" style="height:100, width:100">Welcome to the chat!</textarea>
 
 		<form id="messagefrm" action="#">
-			<input type="text" id="message"/>
+			<label for="message">Message:</label><input type="text" id="message"/>
+			<label for="to_user">Send to:</label><input type="text" id="to_user"/>
 			<input type="submit" text="Send"/>
 		</form>
 	</body>
